@@ -13,7 +13,16 @@ A lightweight, standalone JavaScript quiz system that can be embedded on any web
 
 ## Quick Start
 
-### 1. Include the script
+### 1. Include the script via jsDelivr CDN
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/gh/joetituslink/lil-action@master/lil-action.min.js"
+  defer
+></script>
+```
+
+**Note:** For local development, download the file and use:
 
 ```html
 <script src="lil-action.js" defer></script>
@@ -118,6 +127,16 @@ All CSS classes are prefixed with `la-` to avoid conflicts. Customize by adding 
 - Safari (latest)
 - Edge (latest)
 - Mobile browsers
+
+## Minification
+
+To create the minified version (`lil-action.min.js`), use any JavaScript minifier:
+
+- **Online:** Use [Terser](https://terser.org/) or [JSCompress](https://jscompress.com/)
+- **NPM:** `npm install -g terser && terser lil-action.js -o lil-action.min.js`
+- **VS Code:** Install "Minify" extension
+
+The CDN URL points to the minified version for better performance.
 
 ## License
 
