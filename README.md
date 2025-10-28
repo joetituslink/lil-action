@@ -13,6 +13,39 @@ A lightweight, standalone JavaScript quiz system that can be embedded on any web
 
 ## Quick Start
 
+### Multiple Quizzes on One Page
+
+You can add multiple quizzes on the same page. Each container must have:
+
+- **Unique ID** (can be any unique identifier)
+- **Class `la-action-container`** (used by the script to find containers)
+- **Class `la-wrapper`** (optional, for styling)
+
+```html
+<!-- Quiz 1 -->
+<div
+  id="my-first-quiz"
+  class="la-action-container la-wrapper"
+  data-config="{...}"
+></div>
+
+<!-- Quiz 2 -->
+<div
+  id="my-opener"
+  class="la-action-container la-wrapper"
+  data-config="{...}"
+></div>
+
+<!-- Quiz 3 -->
+<div
+  id="product-selector"
+  class="la-action-container la-wrapper"
+  data-config="{...}"
+></div>
+```
+
+**Note:** If duplicate IDs are detected, only the first one will be displayed.
+
 ### 1. Include the script via jsDelivr CDN
 
 ```html
@@ -30,16 +63,16 @@ A lightweight, standalone JavaScript quiz system that can be embedded on any web
 
 ### 2. Add the container
 
+**Important:** Each quiz must have a unique ID and the class `la-action-container`.
+
 ```html
 <div
-  id="la-action-container"
-  class="la-wrapper"
+  id="my-unique-quiz-id"
+  class="la-action-container la-wrapper"
   data-config='{
-  "enabled": true,
   "destination": "https://example.com/thank-you",
   "color": "#3b82f6",
   "quiz": {
-    "enabled": true,
     "title": "Tell Us About Yourself",
     "subtitle": "Help us personalize your experience",
     "questions": [
@@ -61,8 +94,6 @@ A lightweight, standalone JavaScript quiz system that can be embedded on any web
 
 ### Required Fields
 
-- `enabled` (boolean) - Enable/disable the quiz
-- `quiz.enabled` (boolean) - Enable/disable quiz functionality
 - `quiz.title` (string) - Main quiz title
 - `quiz.subtitle` (string) - Quiz subtitle
 - `quiz.questions` (array) - Array of question objects
