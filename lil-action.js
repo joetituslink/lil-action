@@ -46,7 +46,12 @@
     }
 
     try {
-      var config = JSON.parse(configJson);
+      // Decode HTML entities in the config string
+      var decodedConfigJson = configJson
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, "&");
+      var config = JSON.parse(decodedConfigJson);
       initializeQuiz(container, config);
     } catch (e) {
       console.error("Lil Action: Invalid config data for", containerId, e);
