@@ -321,23 +321,51 @@
       container.innerHTML = html;
     }
 
-    // Load styles dynamically with custom colors (only once)
-    if (!document.getElementById("la-action-styles")) {
-      loadStyles();
+    // Helper function to darken color
+    function darkenColor(color, amount) {
+      if (color.startsWith("#")) {
+        var num = parseInt(color.replace("#", ""), 16);
+        var r = Math.max(0, Math.floor((num >> 16) * (1 - amount)));
+        var g = Math.max(0, Math.floor(((num >> 8) & 0x00ff) * (1 - amount)));
+        var b = Math.max(0, Math.floor((num & 0x0000ff) * (1 - amount)));
+        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+      }
+      return color;
     }
 
-    function loadStyles() {
-      // Get primary color from config, default to black
-      var primaryColor = config.color || "#000000";
+    // Helper function to lighten color
+    function lightenColor(color, amount) {
+      if (color.startsWith("#")) {
+        var num = parseInt(color.replace("#", ""), 16);
+        var r = Math.min(
+          255,
+          Math.floor((num >> 16) + (255 - (num >> 16)) * amount)
+        );
+        var g = Math.min(
+          255,
+          Math.floor(
+            ((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * amount
+          )
+        );
+        var b = Math.min(
+          255,
+          Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * amount)
+        );
+        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+      }
+      return color;
+    }
 
-      // Generate hover/darker shades (simplified approach)
-      var primaryColorHover = darkenColor(primaryColor, 0.1);
-      var primaryColorLight = lightenColor(primaryColor, 0.9);
+    // Initialize immediately
+    renderQuizHTML();
+    initializeQuizInstance();
+  }
 
-      var style = document.createElement("style");
-      style.id = "la-action-styles";
-      style.textContent =
-        `
+  // Load styles once for all quizzes
+  if (!document.getElementById("la-action-styles")) {
+    var style = document.createElement("style");
+    style.id = "la-action-styles";
+    style.textContent = `
 /* Quiz Container Styles */
 .la-wrapper {
 	width: 100%;
@@ -413,11 +441,7 @@
 
 .la-quiz-progress-fill {
 	height: 100%;
-	background: linear-gradient(90deg, ` +
-        primaryColor +
-        `, ` +
-        primaryColorHover +
-        `);
+	background: linear-gradient(90deg, #000000, #333333);
 	border-radius: 4px;
 	transition: width 0.3s ease;
 }
@@ -470,24 +494,14 @@
 }
 
 .la-quiz-option-btn:hover {
-	border-color: ` +
-        primaryColor +
-        `;
-	background-color: ` +
-        primaryColorLight +
-        `;
-	color: ` +
-        primaryColor +
-        `;
+	border-color: #000000;
+	background-color: #f5f5f5;
+	color: #000000;
 }
 
 .la-quiz-option-btn.selected {
-	border-color: ` +
-        primaryColor +
-        `;
-	background-color: ` +
-        primaryColor +
-        `;
+	border-color: #000000;
+	background-color: #000000;
 	color: #ffffff;
 }
 
@@ -518,16 +532,12 @@
 }
 
 .la-quiz-next-btn {
-	background-color: ` +
-        primaryColor +
-        `;
+	background-color: #000000;
 	color: #ffffff;
 }
 
 .la-quiz-next-btn:hover {
-	background-color: ` +
-        primaryColorHover +
-        `;
+	background-color: #333333;
 }
 
 .la-quiz-next-btn:disabled {
@@ -554,9 +564,7 @@
 
 .la-quiz-restart-btn {
 	padding: 0.875rem 2rem;
-	background-color: ` +
-        primaryColor +
-        `;
+	background-color: #000000;
 	color: #ffffff;
 	border: none;
 	border-radius: 8px;
@@ -567,63 +575,9 @@
 }
 
 .la-quiz-restart-btn:hover {
-	background-color: ` +
-        primaryColorHover +
-        `;
+	background-color: #333333;
 }
 		`;
-      document.head.appendChild(style);
-    }
-
-    // Helper function to darken color
-    function darkenColor(color, amount) {
-      if (color.startsWith("#")) {
-        var num = parseInt(color.replace("#", ""), 16);
-        var r = Math.max(0, Math.floor((num >> 16) * (1 - amount)));
-        var g = Math.max(0, Math.floor(((num >> 8) & 0x00ff) * (1 - amount)));
-        var b = Math.max(0, Math.floor((num & 0x0000ff) * (1 - amount)));
-        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
-      }
-      return color;
-    }
-
-    // Helper function to lighten color
-    function lightenColor(color, amount) {
-      if (color.startsWith("#")) {
-        var num = parseInt(color.replace("#", ""), 16);
-        var r = Math.min(
-          255,
-          Math.floor((num >> 16) + (255 - (num >> 16)) * amount)
-        );
-        var g = Math.min(
-          255,
-          Math.floor(
-            ((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * amount
-          )
-        );
-        var b = Math.min(
-          255,
-          Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * amount)
-        );
-        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
-      }
-      return color;
-    }
-
-    // Initialize quiz when DOM is ready
-    function init() {
-      // Render the quiz HTML
-      renderQuizHTML();
-
-      // Initialize quiz
-      initializeQuizInstance();
-    }
-
-    // Run initialization
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init);
-    } else {
-      init();
-    }
+    document.head.appendChild(style);
   }
 })();
