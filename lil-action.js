@@ -383,6 +383,13 @@
       return color;
     }
 
+    // Apply custom color to container
+    var primaryColor = config.color || "#000000";
+    var primaryColorDark = darkenColor(primaryColor, 0.3);
+
+    container.style.setProperty("--la-primary-color", primaryColor);
+    container.style.setProperty("--la-primary-color-dark", primaryColorDark);
+
     // Initialize immediately
     renderQuizHTML();
     initializeQuizInstance();
@@ -468,7 +475,7 @@
 
 .la-quiz-progress-fill {
 	height: 100%;
-	background: linear-gradient(90deg, #000000, #333333);
+	background: var(--la-primary-color, linear-gradient(90deg, #000000, #333333));
 	border-radius: 4px;
 	transition: width 0.3s ease;
 }
@@ -521,14 +528,14 @@
 }
 
 .la-quiz-option-btn:hover {
-	border-color: #000000;
+	border-color: var(--la-primary-color-dark, #000000);
 	background-color: #f5f5f5;
-	color: #000000;
+	color: var(--la-primary-color-dark, #000000);
 }
 
 .la-quiz-option-btn.selected {
-	border-color: #000000;
-	background-color: #000000;
+	border-color: var(--la-primary-color, #000000);
+	background-color: var(--la-primary-color, #000000);
 	color: #ffffff;
 }
 
@@ -559,12 +566,12 @@
 }
 
 .la-quiz-next-btn {
-	background-color: #000000;
+	background-color: var(--la-primary-color, #000000);
 	color: #ffffff;
 }
 
 .la-quiz-next-btn:hover {
-	background-color: #333333;
+	background-color: var(--la-primary-color-dark, #333333);
 }
 
 .la-quiz-next-btn:disabled {
@@ -591,7 +598,7 @@
 
 .la-quiz-restart-btn {
 	padding: 0.875rem 2rem;
-	background-color: #000000;
+	background-color: var(--la-primary-color, #000000);
 	color: #ffffff;
 	border: none;
 	border-radius: 8px;
@@ -602,7 +609,7 @@
 }
 
 .la-quiz-restart-btn:hover {
-	background-color: #333333;
+	background-color: var(--la-primary-color-dark, #333333);
 }
 		`;
     document.head.appendChild(style);
