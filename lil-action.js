@@ -177,8 +177,8 @@
 
       // Send ViewContent event when user starts quiz (answers first question)
       if (questionIndex === 0 && typeof window.fbq !== "undefined") {
-        window.fbq("track", "AddToWishlist", {
-          content_name: "Quiz Question Answered",
+        window.fbq("track", "ViewContent", {
+          content_name: "Quiz Started",
           content_category: "Quiz",
         });
 
