@@ -52,13 +52,13 @@
         .replace(/&apos;/g, "'")
         .replace(/&amp;/g, "&");
       var config = JSON.parse(decodedConfigJson);
-      initializeQuiz(container, config);
+      initializeQuiz(container, config, containerId);
     } catch (e) {
       console.error("Lil Action: Invalid config data for", containerId, e);
     }
   });
 
-  function initializeQuiz(container, config) {
+  function initializeQuiz(container, config, containerId) {
     var quizData = null;
 
     if (config.quiz && config.quiz.questions) {
@@ -383,12 +383,24 @@
       return color;
     }
 
-    // Apply custom color to container
+    // Apply custom colors to container
     var primaryColor = config.color || "#000000";
     var primaryColorDark = darkenColor(primaryColor, 0.3);
+    var secColor = config.secColor || "#6b7280";
+    var secColorLight = lightenColor(secColor, 0.8);
+    var bgColor = config.bgColor || "#ffffff";
+    var textColor = config.textColor || "#111827";
 
     container.style.setProperty("--la-primary-color", primaryColor);
     container.style.setProperty("--la-primary-color-dark", primaryColorDark);
+    container.style.setProperty("--la-secondary-color", secColor);
+    container.style.setProperty("--la-secondary-color-light", secColorLight);
+    container.style.setProperty("--la-bg-color", bgColor);
+    container.style.setProperty("--la-text-color", textColor);
+    container.style.setProperty(
+      "--la-text-secondary",
+      lightenColor(textColor, 0.5)
+    );
 
     // Initialize immediately
     renderQuizHTML();
@@ -410,7 +422,7 @@
 }
 
 .la-card {
-	background: #ffffff;
+	background: var(--la-bg-color, #ffffff);
 	border-radius: 12px;
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 	padding: 2rem;
@@ -432,14 +444,14 @@
 .la-title {
 	font-size: 1.5rem;
 	font-weight: 700;
-	color: #111827;
+	color: var(--la-text-color, #111827);
 	text-align: center;
 	margin-bottom: 0.5rem;
 }
 
 .la-subtitle {
 	font-size: 0.875rem;
-	color: #6b7280;
+	color: var(--la-text-secondary, #6b7280);
 	text-align: center;
 	margin-bottom: 2rem;
 }
@@ -467,7 +479,7 @@
 .la-quiz-progress-bar {
 	width: 100%;
 	height: 8px;
-	background-color: #e5e7eb;
+	background-color: var(--la-secondary-color-light, #e5e7eb);
 	border-radius: 4px;
 	margin-bottom: 0.5rem;
 	overflow: hidden;
@@ -482,7 +494,7 @@
 
 .la-quiz-progress-text {
 	font-size: 0.875rem;
-	color: #6b7280;
+	color: var(--la-secondary-color, #6b7280);
 	font-weight: 500;
 }
 
@@ -503,7 +515,7 @@
 .la-quiz-question h4 {
 	font-size: 1.25rem;
 	font-weight: 600;
-	color: #111827;
+	color: var(--la-text-color, #111827);
 	margin-bottom: 1.5rem;
 	line-height: 1.4;
 }
@@ -516,7 +528,7 @@
 
 .la-quiz-option-btn {
 	padding: 0.875rem 1rem;
-	border: 2px solid #d1d5db;
+	border: 2px solid var(--la-secondary-color-light, #d1d5db);
 	border-radius: 8px;
 	background-color: #ffffff;
 	color: #374151;
@@ -529,7 +541,7 @@
 
 .la-quiz-option-btn:hover {
 	border-color: var(--la-primary-color-dark, #000000);
-	background-color: #f5f5f5;
+	background-color: var(--la-secondary-color-light, #f5f5f5);
 	color: var(--la-primary-color-dark, #000000);
 }
 
@@ -557,12 +569,12 @@
 }
 
 .la-quiz-prev-btn {
-	background-color: #f3f4f6;
+	background-color: var(--la-secondary-color-light, #f3f4f6);
 	color: #374151;
 }
 
 .la-quiz-prev-btn:hover {
-	background-color: #e5e7eb;
+	background-color: var(--la-secondary-color, #e5e7eb);
 }
 
 .la-quiz-next-btn {
@@ -587,12 +599,12 @@
 .la-quiz-completed h4 {
 	font-size: 1.5rem;
 	font-weight: 700;
-	color: #111827;
+	color: var(--la-text-color, #111827);
 	margin-bottom: 1rem;
 }
 
 .la-quiz-completed p {
-	color: #6b7280;
+	color: var(--la-text-secondary, #6b7280);
 	margin-bottom: 2rem;
 }
 

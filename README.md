@@ -4,12 +4,13 @@ A lightweight, standalone JavaScript quiz system that can be embedded on any web
 
 ## Features
 
-- 🎨 **Customizable colors** - Set your own primary color theme
+- 🎨 **Fully customizable theming** - Primary, secondary, background, and text colors
 - 📱 **Responsive design** - Works perfectly on all devices
 - 🚀 **Zero dependencies** - No jQuery, React, or other frameworks needed
 - 📊 **Progress tracking** - Visual progress bar for quiz completion
 - 🎯 **Facebook Pixel integration** - Optional tracking support
 - 💾 **Standalone** - Works on any website, WordPress or otherwise
+- 🎪 **Multiple quizzes per page** - Support for unlimited quiz instances
 
 ## Quick Start
 
@@ -50,7 +51,7 @@ You can add multiple quizzes on the same page. Each container must have:
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/joetituslink/lil-action@master/lil-action.min.js"
+  src="https://cdn.jsdelivr.net/gh/joetituslink/lil-action@latest/lil-action.min.js"
   defer
 ></script>
 ```
@@ -72,6 +73,9 @@ You can add multiple quizzes on the same page. Each container must have:
   data-config='{
   "destination": "https://example.com/thank-you",
   "color": "#3b82f6",
+  "secColor": "#64748b",
+  "bgColor": "#f8fafc",
+  "textColor": "#1e293b",
   "quiz": {
     "title": "Tell Us About Yourself",
     "subtitle": "Help us personalize your experience",
@@ -105,7 +109,10 @@ You can add multiple quizzes on the same page. Each container must have:
 ### Optional Fields
 
 - `destination` (string) - URL to redirect after completion (optional)
-- `color` (string) - Primary color hex code (default: `#000000`)
+- `color` (string) - Primary color hex code for buttons and progress bar (default: `#000000`)
+- `secColor` (string) - Secondary color hex code for borders and backgrounds (default: `#6b7280`)
+- `bgColor` (string) - Container background color hex code (default: `#ffffff`)
+- `textColor` (string) - Primary text color hex code (default: `#111827`)
 
 ### Question Format
 
@@ -126,14 +133,19 @@ See `index.html` for a complete working example.
 
 ### Colors
 
-The quiz automatically generates hover and lighter shades from your primary color:
+The quiz supports full theming with primary, secondary, background, and text colors:
 
 ```html
-data-config='{"color": "#ef4444"}'
+data-config='{ "color": "#ef4444", "secColor": "#fca5a5", "bgColor": "#fef2f2",
+"textColor": "#991b1b" }'
 <!-- Red theme -->
-data-config='{"color": "#10b981"}'
+
+data-config='{ "color": "#10b981", "secColor": "#6ee7b7", "bgColor": "#f0fdf4",
+"textColor": "#166534" }'
 <!-- Green theme -->
-data-config='{"color": "#8b5cf6"}'
+
+data-config='{ "color": "#8b5cf6", "secColor": "#c4b5fd", "bgColor": "#faf5ff",
+"textColor": "#7c3aed" }'
 <!-- Purple theme -->
 ```
 
@@ -174,6 +186,14 @@ The CDN URL points to the minified version for better performance.
 MIT License - Feel free to use in any project.
 
 ## Changelog
+
+### v1.1.0
+
+- Added full theming support with background and text colors
+- Added secColor configuration for secondary colors
+- Added multiple quiz instances per page support
+- Enhanced Facebook Pixel events (ViewContent, CompleteRegistration, Lead)
+- Fixed containerId scope issues
 
 ### v1.0.0
 
