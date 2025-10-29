@@ -379,6 +379,7 @@
       var secColorLight = this.lightenColor(secColor, 0.8);
       var bgColor = this.config.bgColor || "#ffffff";
       var textColor = this.config.textColor || "#111827";
+      var containerWidth = this.config.width || "500px";
 
       this.container.style.setProperty("--la-primary-color", primaryColor);
       this.container.style.setProperty(
@@ -396,6 +397,7 @@
         "--la-text-secondary",
         this.lightenColor(textColor, 0.5)
       );
+      this.container.style.setProperty("--la-container-width", containerWidth);
     }
   }
 
@@ -456,7 +458,7 @@
 .la-wrapper {
 	width: 100%;
 	min-width: 320px;
-	max-width: 500px;
+	max-width: var(--la-container-width, 500px);
 	margin: 2rem auto;
 	padding: 0 1rem;
 }

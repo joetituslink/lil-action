@@ -113,6 +113,7 @@ You can add multiple quizzes on the same page. Each container must have:
 - `secColor` (string) - Secondary color hex code for borders and backgrounds (default: `#6b7280`)
 - `bgColor` (string) - Container background color hex code (default: `#ffffff`)
 - `textColor` (string) - Primary text color hex code (default: `#111827`)
+- `width` (string) - Container maximum width (default: `500px`)
 
 ### Question Format
 
@@ -141,8 +142,8 @@ data-config='{ "color": "#ef4444", "secColor": "#fca5a5", "bgColor": "#fef2f2",
 <!-- Red theme -->
 
 data-config='{ "color": "#10b981", "secColor": "#6ee7b7", "bgColor": "#f0fdf4",
-"textColor": "#166534" }'
-<!-- Green theme -->
+"textColor": "#166534", "width": "600px" }'
+<!-- Green theme (wider container) -->
 
 data-config='{ "color": "#8b5cf6", "secColor": "#c4b5fd", "bgColor": "#faf5ff",
 "textColor": "#7c3aed" }'
