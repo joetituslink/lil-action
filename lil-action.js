@@ -12,6 +12,393 @@
 (function () {
   ("use strict");
 
+  /**
+   * LilAction class - handles individual quiz instances
+   */
+  class LilAction {
+    constructor(container, config) {
+      this.container = container;
+      this.config = config;
+      this.containerId = container.id;
+      this.quizData = null;
+      this.currentQuestionIndex = 0;
+      this.quizAnswers = [];
+      this.quizCompleted = false;
+
+      this.initialize();
+    }
+
+    initialize() {
+      this.parseQuizData();
+      if (this.quizData) {
+        this.applyCustomColors();
+        this.renderQuizHTML();
+        this.initializeQuizInstance();
+      }
+    }
+
+    parseQuizData() {
+      if (this.config.quiz && this.config.quiz.questions) {
+        // Handle new format with question objects
+        var questions = [];
+        var options = [];
+
+        for (var i = 0; i < this.config.quiz.questions.length; i++) {
+          var q = this.config.quiz.questions[i];
+          if (typeof q === "object" && q.question && q.options) {
+            // New format: { question: '...', options: [...] }
+            questions.push(q.question);
+            options.push(q.options);
+          } else if (typeof q === "string") {
+            // Old format: just strings
+            questions.push(q);
+          }
+        }
+
+        // Fill options for old format
+        if (
+          questions.length > 0 &&
+          options.length === 0 &&
+          this.config.quiz.options
+        ) {
+          options = this.config.quiz.options;
+        }
+
+        this.quizData = {
+          questions: questions,
+          options: options,
+          count: questions.length,
+        };
+      }
+    }
+
+    initializeQuizInstance() {
+      if (!this.quizData) return;
+
+      this.currentQuestionIndex = 0;
+      this.quizAnswers = [];
+      this.quizCompleted = false;
+
+      this.renderQuiz();
+      this.setupQuizEventListeners();
+    }
+
+    renderQuiz() {
+      var questionContainer = this.container.querySelector(
+        ".la-quiz-question-container"
+      );
+      if (!questionContainer) return;
+
+      var html = "";
+      for (var i = 0; i < this.quizData.questions.length; i++) {
+        var questionClass =
+          i === this.currentQuestionIndex
+            ? "la-quiz-question active"
+            : "la-quiz-question";
+        html +=
+          '<div class="' +
+          questionClass +
+          '" data-question="' +
+          i +
+          '">' +
+          "<h4>" +
+          this.quizData.questions[i] +
+          "</h4>" +
+          '<div class="la-quiz-options">';
+
+        for (var j = 0; j < this.quizData.options[i].length; j++) {
+          var selectedClass = this.quizAnswers[i] === j ? " selected" : "";
+          html +=
+            '<button type="button" class="la-quiz-option-btn' +
+            selectedClass +
+            '" data-option="' +
+            j +
+            '">' +
+            this.quizData.options[i][j] +
+            "</button>";
+        }
+
+        html += "</div></div>";
+      }
+
+      questionContainer.innerHTML = html;
+      this.updateQuizProgress();
+      this.updateNavigationButtons();
+    }
+
+    updateQuizProgress() {
+      var progressFill = this.container.querySelector(".la-quiz-progress-fill");
+      var progressText = this.container.querySelector(".la-quiz-progress-text");
+
+      if (progressFill && progressText) {
+        var progress =
+          ((this.currentQuestionIndex + 1) / this.quizData.count) * 100;
+        progressFill.style.width = progress + "%";
+        progressText.textContent =
+          "Question " +
+          (this.currentQuestionIndex + 1) +
+          " of " +
+          this.quizData.count;
+      }
+    }
+
+    updateNavigationButtons() {
+      var prevBtn = this.container.querySelector(".la-quiz-prev-btn");
+      var nextBtn = this.container.querySelector(".la-quiz-next-btn");
+
+      if (prevBtn) {
+        prevBtn.style.display =
+          this.currentQuestionIndex > 0 ? "block" : "none";
+      }
+
+      if (nextBtn) {
+        var hasAnswer =
+          this.quizAnswers[this.currentQuestionIndex] !== undefined;
+        nextBtn.disabled = !hasAnswer;
+        nextBtn.textContent =
+          this.currentQuestionIndex === this.quizData.count - 1
+            ? this.config.quiz.completeLabel
+            : "Next";
+      }
+    }
+
+    showQuestion(index) {
+      var questions = this.container.querySelectorAll(".la-quiz-question");
+      questions.forEach(function (q, i) {
+        q.classList.toggle("active", i === index);
+      });
+      this.currentQuestionIndex = index;
+      this.updateQuizProgress();
+      this.updateNavigationButtons();
+    }
+
+    selectQuizOption(questionIndex, optionIndex) {
+      this.quizAnswers[questionIndex] = optionIndex;
+
+      // Send ViewContent event when user starts quiz (answers first question)
+      if (questionIndex === 0 && typeof window.fbq !== "undefined") {
+        window.fbq("track", "AddToWishlist", {
+          content_name: "Quiz Question Answered",
+          content_category: "Quiz",
+        });
+
+        // Also send browser event
+        var quizStartedEvent = new CustomEvent("quizStarted", {
+          detail: { quizId: this.containerId },
+        });
+        document.dispatchEvent(quizStartedEvent);
+      }
+
+      this.renderQuiz();
+      this.updateNavigationButtons();
+    }
+
+    nextQuestion() {
+      if (this.currentQuestionIndex < this.quizData.count - 1) {
+        this.currentQuestionIndex++;
+        this.showQuestion(this.currentQuestionIndex);
+      } else {
+        // Send CompleteRegistration event when completing the last quiz question
+        if (typeof window.fbq !== "undefined") {
+          window.fbq("track", "CompleteRegistration", {
+            content_name: "Quiz Completion",
+            status: true,
+          });
+        }
+        this.completeQuiz();
+      }
+    }
+
+    previousQuestion() {
+      if (this.currentQuestionIndex > 0) {
+        this.currentQuestionIndex--;
+        this.showQuestion(this.currentQuestionIndex);
+      }
+    }
+
+    completeQuiz() {
+      this.quizCompleted = true;
+      var questionContainer = this.container.querySelector(
+        ".la-quiz-question-container"
+      );
+      if (questionContainer) {
+        questionContainer.innerHTML =
+          '<div class="la-quiz-completed">' +
+          "<h4>" +
+          this.config.quiz.completionTitle +
+          "</h4>" +
+          "<p>" +
+          this.config.quiz.completionMessage +
+          "</p>" +
+          '<button type="button" class="la-quiz-continue-btn la-quiz-restart-btn">' +
+          this.config.quiz.continueButton +
+          "</button>" +
+          "</div>";
+      }
+
+      // Hide navigation buttons
+      var prevBtn = this.container.querySelector(".la-quiz-prev-btn");
+      var nextBtn = this.container.querySelector(".la-quiz-next-btn");
+      if (prevBtn) prevBtn.style.display = "none";
+      if (nextBtn) nextBtn.style.display = "none";
+
+      // Setup continue button - redirect to destination
+      var continueBtn = this.container.querySelector(".la-quiz-continue-btn");
+      if (continueBtn) {
+        continueBtn.addEventListener(
+          "click",
+          function () {
+            // Fire Facebook Pixel Lead event when destination button is clicked
+            if (typeof window.fbq !== "undefined") {
+              window.fbq("track", "Lead", {
+                content_name: "Quiz Destination",
+                content_category: "Lead Generation",
+              });
+            }
+
+            // Redirect to destination URL
+            if (this.config.destination) {
+              window.location.href = this.config.destination;
+            } else {
+              // No destination - show success message and reload
+              if (questionContainer) {
+                questionContainer.innerHTML =
+                  '<div class="la-quiz-completed">' +
+                  "<h4>Thank You!</h4>" +
+                  "<p>Your responses have been recorded successfully.</p>" +
+                  "</div>";
+              }
+              setTimeout(function () {
+                window.location.reload();
+              }, 3000);
+            }
+          }.bind(this)
+        );
+      }
+    }
+
+    setupQuizEventListeners() {
+      // Option button clicks - scoped to this container
+      this.container.addEventListener(
+        "click",
+        function (e) {
+          if (e.target.classList.contains("la-quiz-option-btn")) {
+            var questionIndex = this.currentQuestionIndex;
+            var optionIndex = parseInt(e.target.getAttribute("data-option"));
+            this.selectQuizOption(questionIndex, optionIndex);
+          }
+        }.bind(this)
+      );
+
+      // Navigation button clicks
+      var prevBtn = this.container.querySelector(".la-quiz-prev-btn");
+      var nextBtn = this.container.querySelector(".la-quiz-next-btn");
+
+      if (prevBtn) {
+        prevBtn.addEventListener("click", this.previousQuestion.bind(this));
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener("click", this.nextQuestion.bind(this));
+      }
+    }
+
+    // Render quiz HTML dynamically
+    renderQuizHTML() {
+      var html = '<div class="la-card">';
+
+      // Quiz section
+      html +=
+        '<div class="la-quiz-section">' +
+        '<h3 class="la-title">' +
+        this.config.quiz.title +
+        "</h3>" +
+        '<p class="la-subtitle">' +
+        this.config.quiz.subtitle +
+        "</p>" +
+        '<div class="la-quiz-progress">' +
+        '<div class="la-quiz-progress-bar">' +
+        '<div class="la-quiz-progress-fill" style="width: 0%;"></div>' +
+        "</div>" +
+        '<span class="la-quiz-progress-text">Question 1 of ' +
+        this.quizData.count +
+        "</span>" +
+        "</div>" +
+        '<div class="la-quiz-question-container"></div>' +
+        '<div class="la-quiz-navigation">' +
+        '<button type="button" class="la-quiz-nav-btn la-quiz-prev-btn" style="display: none;">Previous</button>' +
+        '<button type="button" class="la-quiz-nav-btn la-quiz-next-btn">Next</button>' +
+        "</div>" +
+        "</div>";
+
+      html += "</div>";
+
+      this.container.innerHTML = html;
+    }
+
+    // Helper function to darken color
+    darkenColor(color, amount) {
+      if (color.startsWith("#")) {
+        var num = parseInt(color.replace("#", ""), 16);
+        var r = Math.max(0, Math.floor((num >> 16) * (1 - amount)));
+        var g = Math.max(0, Math.floor(((num >> 8) & 0x00ff) * (1 - amount)));
+        var b = Math.max(0, Math.floor((num & 0x0000ff) * (1 - amount)));
+        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+      }
+      return color;
+    }
+
+    // Helper function to lighten color
+    lightenColor(color, amount) {
+      if (color.startsWith("#")) {
+        var num = parseInt(color.replace("#", ""), 16);
+        var r = Math.min(
+          255,
+          Math.floor((num >> 16) + (255 - (num >> 16)) * amount)
+        );
+        var g = Math.min(
+          255,
+          Math.floor(
+            ((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * amount
+          )
+        );
+        var b = Math.min(
+          255,
+          Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * amount)
+        );
+        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
+      }
+      return color;
+    }
+
+    // Apply custom colors to container
+    applyCustomColors() {
+      var primaryColor = this.config.color || "#000000";
+      var primaryColorDark = this.darkenColor(primaryColor, 0.3);
+      var secColor = this.config.secColor || "#6b7280";
+      var secColorLight = this.lightenColor(secColor, 0.8);
+      var bgColor = this.config.bgColor || "#ffffff";
+      var textColor = this.config.textColor || "#111827";
+
+      this.container.style.setProperty("--la-primary-color", primaryColor);
+      this.container.style.setProperty(
+        "--la-primary-color-dark",
+        primaryColorDark
+      );
+      this.container.style.setProperty("--la-secondary-color", secColor);
+      this.container.style.setProperty(
+        "--la-secondary-color-light",
+        secColorLight
+      );
+      this.container.style.setProperty("--la-bg-color", bgColor);
+      this.container.style.setProperty("--la-text-color", textColor);
+      this.container.style.setProperty(
+        "--la-text-secondary",
+        this.lightenColor(textColor, 0.5)
+      );
+    }
+  }
+
   // Find all quiz containers on the page using class selector
   var containers = document.querySelectorAll(".la-action-container");
 
@@ -52,360 +439,13 @@
         .replace(/&apos;/g, "'")
         .replace(/&amp;/g, "&");
       var config = JSON.parse(decodedConfigJson);
-      initializeQuiz(container, config, containerId);
+
+      // Create new quiz instance
+      new LilAction(container, config);
     } catch (e) {
       console.error("Lil Action: Invalid config data for", containerId, e);
     }
   });
-
-  function initializeQuiz(container, config, containerId) {
-    var quizData = null;
-
-    if (config.quiz && config.quiz.questions) {
-      // Handle new format with question objects
-      var questions = [];
-      var options = [];
-
-      for (var i = 0; i < config.quiz.questions.length; i++) {
-        var q = config.quiz.questions[i];
-        if (typeof q === "object" && q.question && q.options) {
-          // New format: { question: '...', options: [...] }
-          questions.push(q.question);
-          options.push(q.options);
-        } else if (typeof q === "string") {
-          // Old format: just strings
-          questions.push(q);
-        }
-      }
-
-      // Fill options for old format
-      if (questions.length > 0 && options.length === 0 && config.quiz.options) {
-        options = config.quiz.options;
-      }
-
-      quizData = {
-        questions: questions,
-        options: options,
-        count: questions.length,
-      };
-    }
-
-    // Quiz variables
-    var currentQuestionIndex = 0;
-    var quizAnswers = [];
-    var quizCompleted = false;
-
-    // Quiz functions
-    function initializeQuizInstance() {
-      if (!quizData) return;
-
-      currentQuestionIndex = 0;
-      quizAnswers = [];
-      quizCompleted = false;
-
-      renderQuiz();
-      setupQuizEventListeners();
-    }
-
-    function renderQuiz() {
-      var questionContainer = container.querySelector(
-        ".la-quiz-question-container"
-      );
-      if (!questionContainer) return;
-
-      var html = "";
-      for (var i = 0; i < quizData.questions.length; i++) {
-        var questionClass =
-          i === currentQuestionIndex
-            ? "la-quiz-question active"
-            : "la-quiz-question";
-        html +=
-          '<div class="' +
-          questionClass +
-          '" data-question="' +
-          i +
-          '">' +
-          "<h4>" +
-          quizData.questions[i] +
-          "</h4>" +
-          '<div class="la-quiz-options">';
-
-        for (var j = 0; j < quizData.options[i].length; j++) {
-          var selectedClass = quizAnswers[i] === j ? " selected" : "";
-          html +=
-            '<button type="button" class="la-quiz-option-btn' +
-            selectedClass +
-            '" data-option="' +
-            j +
-            '">' +
-            quizData.options[i][j] +
-            "</button>";
-        }
-
-        html += "</div></div>";
-      }
-
-      questionContainer.innerHTML = html;
-      updateQuizProgress();
-      updateNavigationButtons();
-    }
-
-    function updateQuizProgress() {
-      var progressFill = container.querySelector(".la-quiz-progress-fill");
-      var progressText = container.querySelector(".la-quiz-progress-text");
-
-      if (progressFill && progressText) {
-        var progress = ((currentQuestionIndex + 1) / quizData.count) * 100;
-        progressFill.style.width = progress + "%";
-        progressText.textContent =
-          "Question " + (currentQuestionIndex + 1) + " of " + quizData.count;
-      }
-    }
-
-    function updateNavigationButtons() {
-      var prevBtn = container.querySelector(".la-quiz-prev-btn");
-      var nextBtn = container.querySelector(".la-quiz-next-btn");
-
-      if (prevBtn) {
-        prevBtn.style.display = currentQuestionIndex > 0 ? "block" : "none";
-      }
-
-      if (nextBtn) {
-        var hasAnswer = quizAnswers[currentQuestionIndex] !== undefined;
-        nextBtn.disabled = !hasAnswer;
-        nextBtn.textContent =
-          currentQuestionIndex === quizData.count - 1
-            ? config.quiz.completeLabel
-            : "Next";
-      }
-    }
-
-    function showQuestion(index) {
-      var questions = container.querySelectorAll(".la-quiz-question");
-      questions.forEach(function (q, i) {
-        q.classList.toggle("active", i === index);
-      });
-      currentQuestionIndex = index;
-      updateQuizProgress();
-      updateNavigationButtons();
-    }
-
-    function selectQuizOption(questionIndex, optionIndex) {
-      quizAnswers[questionIndex] = optionIndex;
-
-      // Send ViewContent event when user starts quiz (answers first question)
-      if (questionIndex === 0 && typeof window.fbq !== "undefined") {
-        window.fbq("track", "AddToWishlist", {
-          content_name: "Quiz Question Answered",
-          content_category: "Quiz",
-        });
-
-        // Also send browser event
-        var quizStartedEvent = new CustomEvent("quizStarted", {
-          detail: { quizId: containerId },
-        });
-        document.dispatchEvent(quizStartedEvent);
-      }
-
-      renderQuiz();
-      updateNavigationButtons();
-    }
-
-    function nextQuestion() {
-      if (currentQuestionIndex < quizData.count - 1) {
-        currentQuestionIndex++;
-        showQuestion(currentQuestionIndex);
-      } else {
-        // Send CompleteRegistration event when completing the last quiz question
-        if (typeof window.fbq !== "undefined") {
-          window.fbq("track", "CompleteRegistration", {
-            content_name: "Quiz Completion",
-            status: true,
-          });
-        }
-        completeQuiz();
-      }
-    }
-
-    function previousQuestion() {
-      if (currentQuestionIndex > 0) {
-        currentQuestionIndex--;
-        showQuestion(currentQuestionIndex);
-      }
-    }
-
-    function completeQuiz() {
-      quizCompleted = true;
-      var questionContainer = container.querySelector(
-        ".la-quiz-question-container"
-      );
-      if (questionContainer) {
-        questionContainer.innerHTML =
-          '<div class="la-quiz-completed">' +
-          "<h4>" +
-          config.quiz.completionTitle +
-          "</h4>" +
-          "<p>" +
-          config.quiz.completionMessage +
-          "</p>" +
-          '<button type="button" class="la-quiz-continue-btn la-quiz-restart-btn">' +
-          config.quiz.continueButton +
-          "</button>" +
-          "</div>";
-      }
-
-      // Hide navigation buttons
-      var prevBtn = container.querySelector(".la-quiz-prev-btn");
-      var nextBtn = container.querySelector(".la-quiz-next-btn");
-      if (prevBtn) prevBtn.style.display = "none";
-      if (nextBtn) nextBtn.style.display = "none";
-
-      // Setup continue button - redirect to destination
-      var continueBtn = container.querySelector(".la-quiz-continue-btn");
-      if (continueBtn) {
-        continueBtn.addEventListener("click", function () {
-          // Fire Facebook Pixel Lead event when destination button is clicked
-          if (typeof window.fbq !== "undefined") {
-            window.fbq("track", "Lead", {
-              content_name: "Quiz Destination",
-              content_category: "Lead Generation",
-            });
-          }
-
-          // Redirect to destination URL
-          if (config.destination) {
-            window.location.href = config.destination;
-          } else {
-            // No destination - show success message and reload
-            if (questionContainer) {
-              questionContainer.innerHTML =
-                '<div class="la-quiz-completed">' +
-                "<h4>Thank You!</h4>" +
-                "<p>Your responses have been recorded successfully.</p>" +
-                "</div>";
-            }
-            setTimeout(function () {
-              window.location.reload();
-            }, 3000);
-          }
-        });
-      }
-    }
-
-    function setupQuizEventListeners() {
-      // Option button clicks - scoped to this container
-      container.addEventListener("click", function (e) {
-        if (e.target.classList.contains("la-quiz-option-btn")) {
-          var questionIndex = currentQuestionIndex;
-          var optionIndex = parseInt(e.target.getAttribute("data-option"));
-          selectQuizOption(questionIndex, optionIndex);
-        }
-      });
-
-      // Navigation button clicks
-      var prevBtn = container.querySelector(".la-quiz-prev-btn");
-      var nextBtn = container.querySelector(".la-quiz-next-btn");
-
-      if (prevBtn) {
-        prevBtn.addEventListener("click", previousQuestion);
-      }
-
-      if (nextBtn) {
-        nextBtn.addEventListener("click", nextQuestion);
-      }
-    }
-
-    // Render quiz HTML dynamically
-    function renderQuizHTML() {
-      var html = '<div class="la-card">';
-
-      // Quiz section
-      html +=
-        '<div class="la-quiz-section">' +
-        '<h3 class="la-title">' +
-        config.quiz.title +
-        "</h3>" +
-        '<p class="la-subtitle">' +
-        config.quiz.subtitle +
-        "</p>" +
-        '<div class="la-quiz-progress">' +
-        '<div class="la-quiz-progress-bar">' +
-        '<div class="la-quiz-progress-fill" style="width: 0%;"></div>' +
-        "</div>" +
-        '<span class="la-quiz-progress-text">Question 1 of ' +
-        quizData.count +
-        "</span>" +
-        "</div>" +
-        '<div class="la-quiz-question-container"></div>' +
-        '<div class="la-quiz-navigation">' +
-        '<button type="button" class="la-quiz-nav-btn la-quiz-prev-btn" style="display: none;">Previous</button>' +
-        '<button type="button" class="la-quiz-nav-btn la-quiz-next-btn">Next</button>' +
-        "</div>" +
-        "</div>";
-
-      html += "</div>";
-
-      container.innerHTML = html;
-    }
-
-    // Helper function to darken color
-    function darkenColor(color, amount) {
-      if (color.startsWith("#")) {
-        var num = parseInt(color.replace("#", ""), 16);
-        var r = Math.max(0, Math.floor((num >> 16) * (1 - amount)));
-        var g = Math.max(0, Math.floor(((num >> 8) & 0x00ff) * (1 - amount)));
-        var b = Math.max(0, Math.floor((num & 0x0000ff) * (1 - amount)));
-        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
-      }
-      return color;
-    }
-
-    // Helper function to lighten color
-    function lightenColor(color, amount) {
-      if (color.startsWith("#")) {
-        var num = parseInt(color.replace("#", ""), 16);
-        var r = Math.min(
-          255,
-          Math.floor((num >> 16) + (255 - (num >> 16)) * amount)
-        );
-        var g = Math.min(
-          255,
-          Math.floor(
-            ((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * amount
-          )
-        );
-        var b = Math.min(
-          255,
-          Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * amount)
-        );
-        return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
-      }
-      return color;
-    }
-
-    // Apply custom colors to container
-    var primaryColor = config.color || "#000000";
-    var primaryColorDark = darkenColor(primaryColor, 0.3);
-    var secColor = config.secColor || "#6b7280";
-    var secColorLight = lightenColor(secColor, 0.8);
-    var bgColor = config.bgColor || "#ffffff";
-    var textColor = config.textColor || "#111827";
-
-    container.style.setProperty("--la-primary-color", primaryColor);
-    container.style.setProperty("--la-primary-color-dark", primaryColorDark);
-    container.style.setProperty("--la-secondary-color", secColor);
-    container.style.setProperty("--la-secondary-color-light", secColorLight);
-    container.style.setProperty("--la-bg-color", bgColor);
-    container.style.setProperty("--la-text-color", textColor);
-    container.style.setProperty(
-      "--la-text-secondary",
-      lightenColor(textColor, 0.5)
-    );
-
-    // Initialize immediately
-    renderQuizHTML();
-    initializeQuizInstance();
-  }
 
   // Load styles once for all quizzes
   if (!document.getElementById("la-action-styles")) {
