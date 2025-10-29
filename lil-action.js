@@ -192,6 +192,21 @@
 
     function selectQuizOption(questionIndex, optionIndex) {
       quizAnswers[questionIndex] = optionIndex;
+
+      // Send ViewContent event when user starts quiz (answers first question)
+      if (questionIndex === 0 && typeof window.fbq !== "undefined") {
+        window.fbq("track", "AddToWishlist", {
+          content_name: "Quiz Question Answered",
+          content_category: "Quiz",
+        });
+
+        // Also send browser event
+        var quizStartedEvent = new CustomEvent("quizStarted", {
+          detail: { quizId: containerId },
+        });
+        document.dispatchEvent(quizStartedEvent);
+      }
+
       renderQuiz();
       updateNavigationButtons();
     }
@@ -201,6 +216,13 @@
         currentQuestionIndex++;
         showQuestion(currentQuestionIndex);
       } else {
+        // Send CompleteRegistration event when completing the last quiz question
+        if (typeof window.fbq !== "undefined") {
+          window.fbq("track", "CompleteRegistration", {
+            content_name: "Quiz Completion",
+            status: true,
+          });
+        }
         completeQuiz();
       }
     }
@@ -242,11 +264,11 @@
       var continueBtn = container.querySelector(".la-quiz-continue-btn");
       if (continueBtn) {
         continueBtn.addEventListener("click", function () {
-          // Fire Facebook Pixel CompleteRegistration event
+          // Fire Facebook Pixel Lead event when destination button is clicked
           if (typeof window.fbq !== "undefined") {
-            window.fbq("track", "CompleteRegistration", {
-              content_name: "Quiz Completion",
-              status: true,
+            window.fbq("track", "Lead", {
+              content_name: "Quiz Destination",
+              content_category: "Lead Generation",
             });
           }
 
